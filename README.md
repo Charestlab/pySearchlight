@@ -46,7 +46,7 @@ SL.fit_rsa(
 # SL.RDM (if wantreshape was set to True when we fit, would be a x , y , z by n_pairs array)
 
 index = 100
-plt.imshow(squareform(SL.RDM[index, :])) # plots the x, y, z RDM 
+plt.imshow(squareform(SL.RDM[index, :])) # plots the RDM of the 100th center 
 
 # let's make model inference
 n_pairs = n_conditions*(n_conditions-1) // 2 
