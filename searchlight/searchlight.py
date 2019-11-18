@@ -19,18 +19,18 @@ def upper_tri_indexing(RDM):
     return RDM[r, c]
 
 
-def get_distance(data, ind):
+def get_rdm(data, ind):
 
-    """get_distance returns the correlation distance 
-       across condition patterns in X
-       get_distance uses numpy's einsum
+    """get_rdm returns the correlation distance 
+       across all pairs of condition patterns in X
+       get_rdm uses numpy's einsum
     
     Args:
         data (array): conditions x all channels.
-        ind (vector): subspace of voxels for that sphere.
+        ind (vector): subspace of voxels to index data with.
     
     Returns:
-        UTV: pairwise distances between condition patterns in X 
+        UTV: pairwise distances between condition patterns in indexed data. 
              (in upper triangular vector form)
     """
     ind = np.array(ind)
@@ -41,45 +41,59 @@ def get_distance(data, ind):
     return 1 - upper_tri_indexing(np.einsum('ik,jk', X, X))
 
 class RSASearchLight():
-    def __init__(self, mask, radius=1, thr=.7, njobs=1, verbose=False):
-        """
-        Parameters:
-            mask:    3d spatial mask (of usable voxels set to 1)
-            radius:  radius around each center (in voxels)
-            thr :    proportion of usable voxels necessary
-                     thr = 1 means we don't accept centers with voxels outside
-                     the brain
+    def __init__(self, mask, radius=2, threshold=.7, njobs=1, verbose=False):
+        """[summary]
+        
+        Args:
+            mask 3D numpy array):   typically imported with nib.load('yourmask.nii').get_data()
+                                    3d spatial mask (boolean where brain voxels are set to 1)
+            radius (int, optional): radius for spheres around each center (in voxels). 
+                                    Defaults to 2.
+            threshold (float, optional): proportion of brain voxels within a sphere.
+                                    threshold = 1 means we don't accept centers with voxels outside
+                                    the brain. Defaults to .7.
+            njobs (int, optional): number of cores to distribute the fitting procedure to. Defaults to 1.
+            verbose (bool, optional): turn tqdm on. Defaults to False. This reports progress in the 
+                                    object initialisation and in fit_rsa(). 
         """
         self.verbose = verbose
         self.mask = mask
         self.njobs = njobs
         self.radius = radius
-        self.thr = thr
-        print('finding centers')
+        self.threshold = threshold
+        if self.verbose:
+            print('finding centers')
         self.centers = self._findCenters()
-        print('finding center indices')
+        if self.verbose:
+            print('finding center indices')
         self.centerIndices = self._findCenterIndices()
-        print('finding all sphere indices')
+        if self.verbose:
+            print('finding all sphere indices')
         self.allIndices = self._allSphereIndices()
         self.RDM = None
         self.NaNs = []
 
     def _findCenters(self):
-        """
-        Find all indices from centers with usable voxels over threshold.
+        """ Find the centers whose 
+            proportion of sphere voxels >= self.threshold.
+        
+        Returns:
+            numpy array: valid centers (xyz tuple coordinates)
         """
         # make centers a list of 3-tuple coords
         centers = zip(*np.nonzero(self.mask))
         good_center = []
         for center in centers:
             ind = self.searchlightInd(center)
-            if self.mask[ind].mean() >= self.thr:
+            if self.mask[ind].mean() >= self.threshold:
                 good_center.append(center)
         return np.array(good_center)
 
     def _findCenterIndices(self):
-        """
-        Find all subspace indices from centers
+        """find the subspace indices for the centers 
+        
+        Returns:
+            numpy array: center indices in volume subspace.
         """
         centerIndices = []
         dims = self.mask.shape
@@ -93,6 +107,12 @@ class RSASearchLight():
         return np.array(centerIndices)
 
     def _allSphereIndices(self):
+        """module for gathering searchlight sphere indices.
+           
+        Returns:
+            SL.allIndices: list of searchlight indices for all centers.
+                           If this could be parallelised, we would gain even more speed.  
+        """
         allIndices = []
         dims = self.mask.shape
         for i, cen in enumerate(self.centers):
@@ -107,19 +127,22 @@ class RSASearchLight():
         return allIndices
 
     def searchlightInd(self, center):
-        """Return indices for searchlight where distance < radius
-
-        Parameters:
-            center: point around which to make searchlight sphere
-        Sets RDM variable to:
-            numpy array of shape (3, N_comparisons) for subsetting data
+        """Return indices for searchlight where distance 
+           between a voxel and their center < radius (in voxels)
+        
+        Args:
+            center (index):  point around which to make searchlight sphere
+        
+        Returns:
+            list: the list of volume indices that respect the 
+                    searchlight radius for the input center.  
         """
         center = np.array(center)
-        shape = self.mask.shape
+        mask_shape = self.mask.shape
         cx, cy, cz = np.array(center)
-        x = np.arange(shape[0])
-        y = np.arange(shape[1])
-        z = np.arange(shape[2])
+        x = np.arange(mask_shape[0])
+        y = np.arange(mask_shape[1])
+        z = np.arange(mask_shape[2])
 
         # First mask the obvious points
         # - may actually slow down your calculation depending.
@@ -134,7 +157,7 @@ class RSASearchLight():
 
         return data[distance < self.radius].T.tolist()
 
-    def checkNaNs(X):
+    def checkNaNs(self, X):
         """
         TODO - this function
         """
@@ -142,18 +165,17 @@ class RSASearchLight():
         # nans = np.all(np.isnan(X), axis=0)[0]
         # return X[:,~nans]
 
-    def fit_rsa(self, data, wantreshape=True, metric='correlation'):
-        """
-        Fit Searchlight for RDM
-        Parameters:
-            data:       4D numpy array - (x, y, z, condition vols)
-            metric :    str or callable, optional
-                        The distance metric to use.  If a string, the distance function can be
-                        'braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation',
-                        'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'kulsinski',
-                        'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 'russellrao',
-                        'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean',
-                        'wminkowski', 'yule'.
+    def fit_rsa(self, data, wantreshape=True):
+        """ Fit RDMs in searchlight spheres
+            
+            Args:
+                data 4D numpy array: (x, y, z, condition vols)
+                wantreshape (bool, optional): Defaults to True. 
+                                              whether you want the data back in
+                                              its volume form, or 2d array of 
+                                              distances for every center. 
+                
+            Return SL model, with RDMs for every center.
         """
         print('Running searchlight RSA')
 
@@ -173,11 +195,11 @@ class RSASearchLight():
 
         if self.verbose is True:
             distances = Parallel(n_jobs=self.njobs)(
-                delayed(get_distance)(
+                delayed(get_rdm)(
                     data, x) for x in tqdm(self.allIndices))
         else:
             distances = Parallel(n_jobs=self.njobs)(
-                delayed(get_distance)(
+                delayed(get_rdm)(
                     data, x) for x in self.allIndices)
             distances = np.asarray(distances)
         if wantreshape:

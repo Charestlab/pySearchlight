@@ -1,14 +1,5 @@
 import numpy as np
 from math import floor, ceil
-from scipy.spatial.distance import cdist, squareform
-from scipy.stats import rankdata
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.model_selection import cross_val_score
-from sklearn.pipeline import make_pipeline
-from sklearn import svm
-import cv2
-import itertools
-
 
 
 def upper_tri_indexing(RDM):
@@ -51,7 +42,7 @@ def chunking(vect, num, chunknum=None):
         <vect> is a array
         <num> is desired length of a chunk
         <chunknum> is chunk number desired (here we use a 1-based
-              indexing, i.e. you may want the frist chunk, or the second
+              indexing, i.e. you may want the first chunk, or the second
               chunk, but not the zeroth chunk)
     Returns:
         [numpy array object]:
@@ -59,8 +50,8 @@ def chunking(vect, num, chunknum=None):
         return a numpy array object of chunks.  the last vector
         may have fewer than <num> elements.
 
-        also return the beginning and ending indices associated with
-        this chunk in <xbegin> and <xend>.
+        also return the beginning indices associated with
+        this chunk in <xbegin>.
 
     Examples:
 
@@ -70,11 +61,6 @@ def chunking(vect, num, chunknum=None):
         assert(np.all(chunking(list(np.arange(5)+1),3)==a))
 
         assert(chunking([4, 2, 3], 2, 2)==([3], 3, 3))
-
-
-        # do in chunks
-        chunks = chunking(
-            list(range(mflat.shape[1])), int(np.ceil(mflat.shape[1]/numchunks)))
 
     """
     if chunknum is None:
@@ -88,57 +74,41 @@ def chunking(vect, num, chunknum=None):
         f = chunking(vect, num)
         # double check that these behave like in matlab (xbegin)
         xbegin = (chunknum-1)*num+1
-        return np.asarray(f[num-1]), xbegin, xend
+        return np.asarray(f[num-1]), xbegin
 
 def isnotfinite(arr):
+    """find non-finite entries
+    
+    Args:
+        arr (numpy array): numpy array with finite or infinite entries 
+    
+    Returns:
+        bool: boolean with True when non-finite 
+    """
     res = np.isfinite(arr)
     np.bitwise_not(res, out=res)  # in-place
     return res
 
-def sample_conditions(conditions, n_samples, replace=False):
-    
-    unique_conditions = np.unique(conditions)
-    
-    choices = np.random.choice(unique_conditions, n_samples, replace=replace)
-
-    conditions_bool = np.any(np.array([conditions == v for v in choices]), axis=0)
-
-    return conditions_bool
-
-def average_over_conditions(data, conditions, conditions_to_avg):
-    
-    lookup =  np.unique(conditions_to_avg)
-    n_conds = lookup.shape[0]
-    n_dims = data.ndim
-
-    if n_dims==2:
-        n_voxels, _ = data.shape
-        avg_data = np.empty((n_voxels, n_conds))
-    else:
-        x, y, z, _ = data.shape 
-        avg_data = np.empty((x,y,z, n_conds))
-
-    for j, x in enumerate(lookup):
-
-        conditions_bool = conditions==x 
-        if n_dims ==2:
-            avg_data[:,j] = data[:, conditions_bool].mean(axis=1)
-        else:
-            avg_data[:,:,:,j] = data[:, :, :, conditions_bool].mean(axis=3)
-
-    return avg_data
-
-
 def makeimagestack(m):
+    """ make a simple stack of slices for visualisation.
+    
+    Args:
+        m (3D numpy array): 3 Dimensional volume
+    
+    Returns:
+        [type]: given the number of z-slices, we distribute these
+                slices in a n by p
+    Example:
 
-    """
-    def makeimagestack(m)
-
-    <m> is a 3D matrix.  if more than 3D, we reshape to be 3D.
-    we automatically convert to double format for the purposes of this method.
-    try to make as square as possible
-    (e.g. for 16 images, we would use [4 4]).
-    find the minimum possible to fit all the images in.
+        import matplotlib.pyplot as plt
+        import matplotlib.cm as cm
+        import numpy as np
+        vol = np.zeros((20, 20, 34))
+        vol[5:15, 5:15, 8:28]=1
+        fig = plt.figure()
+        im = plt.imshow(makeimagestack(vol), cmap=cm.coolwarm)
+        plt.show()
+        
     """
 
     bordersize = 1 
@@ -185,40 +155,16 @@ def makeimagestack(m):
 
     return flatmap
 
-    """
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
-    fig, ax = plt.subplots()
-    im = ax.imshow(flatmap, cmap=cm.coolwarm)
-    plt.show()
-    """
+# def rankTransformRDM(rdm):
+#     """rank transform an RDM
 
-def resizeImages(imageArray, resx, resy):
-    nimages, x, y, rgb = imageArray.shape
-    res = []
-    for image in range(nimages):
-        res.append(cv2.resize(imageArray[image, :, :, :], dsize=(
-            resx, resy), interpolation=cv2.INTER_CUBIC))
-    return np.asarray(res)
+#     Args:
+#         rdm ([type]): [description]
 
-
-def rankTransformRDM(rdm):
-    """[summary]
-
-    Args:
-        rdm ([type]): [description]
-
-    Returns:
-        [type]: [description]
-    """
-    scaler = MinMaxScaler()
-    shape = rdm.shape
-    rdm_ranks = rankdata(rdm)
-    return scaler.fit_transform(rdm_ranks.reshape(-1, 1)).reshape(shape)
-
-
-def upper_tri_indexing(A):
-    # returns the upper triangle
-    m = A.shape[0]
-    r, c = np.triu_indices(m, 1)
-    return A[r, c]
+#     Returns:
+#         [type]: [description]
+#     """
+#     scaler = MinMaxScaler()
+#     shape = rdm.shape
+#     rdm_ranks = rankdata(rdm)
+#     return scaler.fit_transform(rdm_ranks.reshape(-1, 1)).reshape(shape)
