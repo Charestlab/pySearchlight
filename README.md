@@ -1,6 +1,12 @@
 # pySearchlight
 python tool for fMRI searchlight mapping
 
+# to install : 
+python setup.py develop
+
+# to run tests :
+python setup.py test
+
 # example case
 
 ```python
