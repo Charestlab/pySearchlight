@@ -1,5 +1,5 @@
 # pySearchlight
-python tool for searchlight mapping
+python tool for fMRI searchlight mapping
 
 # example case
 
@@ -34,3 +34,7 @@ SL.fit_rsa(
     )
 ```
 
+# planned enhancements:
+
+- this searchlight package will ultimately sit on pyrsa.
+- e.g. one could import a distance metric from pyrsa.rdm.calc and pass it to SL.fit_rsa as a fitting method.
