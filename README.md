@@ -55,7 +55,7 @@ model_rdm = np.random.rand(1, n_pairs)
 
 rdm_corr_to_model = corr_rdms(SL.RDM, model_rdm)
 
-brain_vol = np.zeros(x, y, z)
+brain_vol = np.zeros((x, y, z))
 brain_vol[SL.centerIndices] = rdm_corr_to_model
 # then you can use matplotlib imshow with searchlight.utils.makeimagestack(brain_vol) 
 # for a quick visualisation.
