@@ -4,6 +4,16 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 
 
+"""pySearchlight
+
+Returns:
+    [SL]: Searchlight object and its methods.
+
+This class was initially inspired by the following :
+https://github.com/machow/pysearchlight
+
+"""
+
 def upper_tri_indexing(RDM):
     """upper_tri_indexing returns the upper triangular index of an RDM
     
