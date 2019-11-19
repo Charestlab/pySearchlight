@@ -27,7 +27,7 @@ mask = nib.load('mask.nii').get_data()
 betas = nib.load('betas.nii').get_data()
 x, y, z, n_conditions = betas.shape
 
-assert mask.shape==betas.shape[0:2], 'dimensions of mask and betas must match.'
+assert mask.shape==betas.shape[0:3], 'dimensions of mask and betas must match.'
 
 # initialise the searchlight.
 SL = RSASearchLight(
