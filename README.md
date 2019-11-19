@@ -15,6 +15,7 @@ import numpy as np
 from searchlight.searchlight import RSAsearchlight
 from searchlight.utils import corr_rdms
 from scipy.spatial.distance import squareform
+import matplotlib.pyplot as plt
 
 # we will perform a searchlight with a radius of 3
 radius = 3
@@ -29,10 +30,10 @@ x, y, z, n_conditions = betas.shape
 assert mask.shape==betas.shape[0:2], 'dimensions of mask and betas must match.'
 
 # initialise the searchlight.
-SL = RSAsearchlight(
+SL = RSASearchLight(
         mask, # pass the binary mask
         radius=3, # radius of 3
-        thr=1.0, # threshold of 1
+        threshold=1.0, # threshold of 1
         njobs=2, # this will distribute the searchlight mapping on 2 cores.
         verbose=True  # this will make use of tqdm to display time spent and left
         )
@@ -54,7 +55,7 @@ model_rdm = np.random.rand(1, n_pairs)
 
 rdm_corr_to_model = corr_rdms(SL.RDM, model_rdm)
 
-brain_vol = np.zeros(x, y, z)
+brain_vol = np.zeros((x, y, z))
 brain_vol[SL.centerIndices] = rdm_corr_to_model
 # then you can use matplotlib imshow with searchlight.utils.makeimagestack(brain_vol) 
 # for a quick visualisation.
