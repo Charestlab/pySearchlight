@@ -29,10 +29,10 @@ x, y, z, n_conditions = betas.shape
 assert mask.shape==betas.shape[0:2], 'dimensions of mask and betas must match.'
 
 # initialise the searchlight.
-SL = RSAsearchlight(
+SL = RSASearchLight(
         mask, # pass the binary mask
         radius=3, # radius of 3
-        thr=1.0, # threshold of 1
+        threshold=1.0, # threshold of 1
         njobs=2, # this will distribute the searchlight mapping on 2 cores.
         verbose=True  # this will make use of tqdm to display time spent and left
         )
