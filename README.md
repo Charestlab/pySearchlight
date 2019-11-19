@@ -15,6 +15,7 @@ import numpy as np
 from searchlight.searchlight import RSAsearchlight
 from searchlight.utils import corr_rdms
 from scipy.spatial.distance import squareform
+import matplotlib.pyplot as plt
 
 # we will perform a searchlight with a radius of 3
 radius = 3
