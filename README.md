@@ -15,6 +15,7 @@ import numpy as np
 from searchlight import RSASearchLight
 from searchlight.utils import corr_rdms, makeimagestack
 from scipy.spatial.distance import squareform
+from scipy.stats import rankdata
 import matplotlib.pyplot as plt
 
 # we will perform a searchlight with a radius of 3
@@ -55,14 +56,32 @@ model_rdm = np.random.rand(1, n_pairs)
 
 rdm_corr_to_model = corr_rdms(SL.RDM, model_rdm)
 
-brain_vol = np.zeros((x, y, z))
+brain_vol = np.zeros((x*y*z))
 brain_vol[SL.centerIndices] = rdm_corr_to_model
 
 brain_vol = np.reshape(brain_vol, [x, y, z])
 
-plt.imshow(makeimagestack(brain_vol))
-# then you can use matplotlib imshow with searchlight.utils.makeimagestack(brain_vol) 
+# then you can use matplotlib imshow and makeimagestack
 # for a quick visualisation.
+plt.imshow(makeimagestack(brain_vol))
+plt.colorbar()
+
+# in the above example, we computed a pearson correlation between the brain and the model.
+# to implement a spearman correlation we rank the two datasets first.
+model_rdm_rank = np.apply_along_axis(rankdata, 1, model_rdm)
+brain_RDMs_rank = np.apply_along_axis(rankdata, 1, SL.RDM)
+
+# and then correlate
+rdm_corr_spearman_to_model = corr_rdms(brain_RDMs_rank, model_rdm_rank)
+
+brain_vol_sp = np.zeros((x*y*z))
+brain_vol_sp[SL.centerIndices] = rdm_corr_spearman_to_model
+brain_vol_sp = np.reshape(brain_vol_sp, [x, y, z])
+
+# then you can use matplotlib imshow and makeimagestack
+# for a quick visualisation.
+plt.imshow(makeimagestack(brain_vol_sp))
+plt.colorbar()
 
 ```
 
