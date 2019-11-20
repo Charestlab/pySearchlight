@@ -202,24 +202,32 @@ class RSASearchLight():
         # test passed.
 
         # brain = np.zeros((x, y, z, rdm_size, rdm_size))
-
-        if self.verbose is True:
-            distances = Parallel(n_jobs=self.njobs)(
-                delayed(get_rdm)(
-                    data, x) for x in tqdm(self.allIndices))
-        else:
-            distances = Parallel(n_jobs=self.njobs)(
-                delayed(get_rdm)(
-                    data, x) for x in self.allIndices)
-            distances = np.asarray(distances)
         if wantreshape:
+            if self.verbose is True:
+                distances = Parallel(n_jobs=self.njobs)(
+                    delayed(get_rdm)(
+                        data, x) for x in tqdm(self.allIndices))
+            else:
+                distances = Parallel(n_jobs=self.njobs)(
+                    delayed(get_rdm)(
+                        data, x) for x in self.allIndices)
+                distances = np.asarray(distances)
+            
             # number of pairwise comparisons
             n_combs = nobjects*(nobjects-1) // 2
             self.RDM = np.zeros((x*y*z, n_combs)).astype(np.float32)
             self.RDM[list(self.centerIndices), :] = distances
             self.RDM = self.RDM.reshape((x, y, z, n_combs))
         else:
-            self.RDM = np.asarray(distances)
+            if self.verbose is True:
+                self.RDM = Parallel(n_jobs=self.njobs)(
+                    delayed(get_rdm)(
+                        data, x) for x in tqdm(self.allIndices))
+            else:
+                self.RDM = Parallel(n_jobs=self.njobs)(
+                    delayed(get_rdm)(
+                        data, x) for x in self.allIndices)
+                self.RDM = np.asarray(self.RDM)
 
     # def fit_mvpa(self, data, labels):
     #         """
