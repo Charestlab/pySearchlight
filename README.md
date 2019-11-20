@@ -12,7 +12,7 @@ python tool for fMRI searchlight mapping
 ```python
 import nibabel as nib
 import numpy as np
-from searchlight import RSAsearchlight
+from searchlight import RSASearchLight
 from searchlight.utils import corr_rdms, makeimagestack
 from scipy.spatial.distance import squareform
 import matplotlib.pyplot as plt
