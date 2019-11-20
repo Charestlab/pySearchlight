@@ -12,8 +12,8 @@ python tool for fMRI searchlight mapping
 ```python
 import nibabel as nib
 import numpy as np
-from searchlight.searchlight import RSAsearchlight
-from searchlight.utils import corr_rdms
+from searchlight import RSAsearchlight
+from searchlight.utils import corr_rdms, makeimagestack
 from scipy.spatial.distance import squareform
 import matplotlib.pyplot as plt
 
@@ -33,7 +33,7 @@ assert mask.shape==betas.shape[0:3], 'dimensions of mask and betas must match.'
 SL = RSASearchLight(
         mask, # pass the binary mask
         radius=3, # radius of 3
-        threshold=1.0, # threshold of 1
+        threshold=.7, # threshold of .7 (how much voxels of a sphere need to be inside the brain)
         njobs=2, # this will distribute the searchlight mapping on 2 cores.
         verbose=True  # this will make use of tqdm to display time spent and left
         )
@@ -57,6 +57,10 @@ rdm_corr_to_model = corr_rdms(SL.RDM, model_rdm)
 
 brain_vol = np.zeros((x, y, z))
 brain_vol[SL.centerIndices] = rdm_corr_to_model
+
+brain_vol = np.reshape(brain_vol, [x, y, z])
+
+plt.imshow(makeimagestack(brain_vol))
 # then you can use matplotlib imshow with searchlight.utils.makeimagestack(brain_vol) 
 # for a quick visualisation.
 
