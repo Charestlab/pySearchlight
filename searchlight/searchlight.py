@@ -211,7 +211,7 @@ class RSASearchLight():
                 distances = Parallel(n_jobs=self.njobs)(
                     delayed(get_rdm)(
                         data, x) for x in self.allIndices)
-                distances = np.asarray(distances)
+            distances = np.asarray(distances)
             
             # number of pairwise comparisons
             n_combs = nobjects*(nobjects-1) // 2
